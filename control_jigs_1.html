@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Jigs · Soporte Técnico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --charcoal:#1B222C;
+    --charcoal-2:#232C38;
+    --steel:#2C3849;
+    --steel-line:#3E4C61;
+    --paper:#F1F3F6;
+    --card:#FFFFFF;
+    --ink:#1B222C;
+    --muted:#6B7686;
+    --line:#E0E4EA;
+    --accent:#F2A81D;
+    --accent-ink:#4A3200;
+    --ok:#2E9E5B;
+    --ok-bg:#E4F5EB;
+    --warn:#C6871A;
+    --warn-bg:#FBF0DC;
+    --pend:#5B6779;
+    --pend-bg:#E9EBEF;
+    --danger:#C0392B;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    letter-spacing:.02em;
+    text-transform:uppercase;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  /* ---------- header ---------- */
+  header{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 40px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 40px),
+      var(--charcoal);
+    color:#fff;
+    padding:22px 28px 0 28px;
+  }
+  .header-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    padding-bottom:18px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:40px;height:40px;border-radius:6px;
+    background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--accent-ink);
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;
+    box-shadow:inset 0 0 0 3px rgba(0,0,0,.12);
+    flex-shrink:0;
+  }
+  .brand h1{margin:0;font-size:26px;line-height:1;color:#fff;}
+  .brand p{margin:4px 0 0;color:#9AA6B8;font-size:13px;font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0;}
+
+  .tabs{display:flex;gap:6px;background:rgba(0,0,0,.25);padding:5px;border-radius:999px;}
+  .tab-btn{
+    border:none;background:transparent;color:#B7C0CE;
+    padding:9px 20px;border-radius:999px;font-family:'Barlow Condensed',sans-serif;
+    font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:14px;
+    transition:background .15s ease,color .15s ease;
+  }
+  .tab-btn.active{background:var(--accent);color:var(--accent-ink);}
+  .tab-btn:not(.active):hover{color:#fff;}
+
+  /* ---------- layout ---------- */
+  main{max-width:1280px;margin:0 auto;padding:24px 28px 60px;}
+  .view{display:none;}
+  .view.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .dash-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:12px;margin-bottom:22px;
+  }
+  .stat-card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 16px 14px;position:relative;overflow:hidden;
+  }
+  .stat-card::before{
+    content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:var(--steel-line);
+  }
+  .stat-card.acc::before{background:var(--accent);}
+  .stat-card.ok::before{background:var(--ok);}
+  .stat-card.warn::before{background:var(--warn);}
+  .stat-card.pend::before{background:var(--pend);}
+  .stat-label{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin:0 0 6px;}
+  .stat-value{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:700;line-height:1;}
+  .stat-sub{font-size:11.5px;color:var(--muted);margin-top:4px;font-family:'IBM Plex Mono',monospace;}
+
+  .status-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:var(--line);}
+  .status-bar span{height:100%;}
+
+  /* toolbar */
+  .toolbar{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    margin-bottom:10px;flex-wrap:wrap;
+  }
+  .search-wrap{position:relative;flex:1;min-width:220px;max-width:340px;}
+  .search-wrap input{
+    width:100%;padding:9px 12px 9px 34px;border-radius:8px;border:1px solid var(--line);
+    background:var(--card);font-size:13.5px;font-family:'Inter',sans-serif;
+  }
+  .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.45;}
+  .btn{
+    border:none;border-radius:8px;padding:10px 18px;font-weight:600;font-size:13.5px;
+    display:inline-flex;align-items:center;gap:8px;transition:transform .1s ease, box-shadow .15s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);}
+  .btn-primary:hover{box-shadow:0 3px 10px rgba(242,168,29,.4);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--steel-line);color:var(--ink);}
+  .btn-danger-ghost{background:transparent;color:var(--danger);border:1px solid #ECC9C3;}
+  .btn-danger-ghost:hover{background:#FBEEEC;}
+  .btn-sm{padding:6px 10px;font-size:12px;border-radius:6px;}
+
+  /* table */
+  .table-wrap{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:auto;
+  }
+  table{width:100%;border-collapse:collapse;min-width:920px;}
+  thead th{
+    text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:12.5px;
+    text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;
+    padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap;background:#FAFBFC;
+    position:sticky;top:0;
+  }
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FAFBFD;}
+  .jig-tag{
+    display:inline-flex;align-items:center;gap:6px;background:var(--charcoal-2);color:#fff;
+    padding:4px 10px 4px 8px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:12px;
+    font-weight:500;
+  }
+  .jig-tag::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);}
+  .cell-muted{color:var(--muted);}
+  .cell-desc{max-width:220px;color:var(--muted);font-size:12.5px;line-height:1.4;}
+  .row-actions{display:flex;gap:6px;white-space:nowrap;}
+  .icon-btn{
+    width:30px;height:30px;border-radius:6px;border:1px solid var(--line);background:var(--card);
+    display:inline-flex;align-items:center;justify-content:center;color:var(--muted);
+  }
+  .icon-btn:hover{border-color:var(--steel-line);color:var(--ink);}
+  .icon-btn.danger:hover{border-color:#ECC9C3;color:var(--danger);background:#FBEEEC;}
+  .link-ev{color:#1E6FA6;font-size:12px;font-weight:600;text-decoration:none;}
+  .link-ev:hover{text-decoration:underline;}
+
+  .badge{display:inline-block;padding:4px 10px;border-radius:5px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+  .badge-pendiente{background:var(--pend-bg);color:var(--pend);}
+  .badge-proceso{background:var(--warn-bg);color:var(--warn);}
+  .badge-terminado{background:var(--ok-bg);color:var(--ok);}
+
+  select.status-select{
+    border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12px;font-family:'Inter',sans-serif;
+    background:var(--card);color:var(--ink);font-weight:600;
+  }
+
+  .empty-state{padding:48px 20px;text-align:center;color:var(--muted);}
+  .empty-state .brand-mark{margin:0 auto 14px;}
+  .empty-state h3{margin:0 0 6px;color:var(--ink);font-size:20px;}
+  .empty-state p{margin:0 0 16px;font-size:13.5px;font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0;}
+
+  footer{max-width:1280px;margin:0 auto;padding:0 28px 30px;color:var(--muted);font-size:11.5px;font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- modal ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(15,19,25,.55);backdrop-filter:blur(2px);
+    display:none;align-items:center;justify-content:center;padding:20px;z-index:50;
+  }
+  .overlay.open{display:flex;}
+  .modal{
+    background:var(--card);border-radius:12px;width:100%;max-width:560px;
+    max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);
+    animation:pop .18s ease;
+  }
+  @keyframes pop{from{opacity:0;transform:scale(.97) translateY(6px);}to{opacity:1;transform:none;}}
+  .modal-sm{max-width:380px;}
+  .modal-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:18px 22px;border-bottom:1px solid var(--line);
+  }
+  .modal-head h2{margin:0;font-size:20px;}
+  .modal-head p{margin:2px 0 0;font-size:12px;color:var(--muted);font-family:'Inter';text-transform:none;letter-spacing:0;}
+  .modal-close{border:none;background:none;color:var(--muted);font-size:20px;line-height:1;padding:4px;}
+  .modal-close:hover{color:var(--ink);}
+  .modal-body{padding:20px 22px;}
+  .modal-foot{padding:16px 22px 20px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--line);}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field.full{grid-column:1 / -1;}
+  .field label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+  .field input,.field select,.field textarea{
+    border:1px solid var(--line);border-radius:7px;padding:9px 11px;font-size:13.5px;
+    font-family:'Inter',sans-serif;background:#FCFCFD;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{background:#fff;}
+  .field textarea{resize:vertical;min-height:56px;}
+
+  .pw-icon{
+    width:44px;height:44px;border-radius:10px;background:var(--charcoal);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 14px;
+  }
+  .pw-error{color:var(--danger);font-size:12.5px;text-align:center;margin-top:8px;min-height:16px;}
+  .shake{animation:shake .3s;}
+  @keyframes shake{25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+
+  @media (max-width:640px){
+    .form-grid{grid-template-columns:1fr;}
+    header{padding:18px 16px 0;}
+    main{padding:18px 16px 40px;}
+    .header-top{flex-direction:column;}
+  }
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--charcoal);color:#fff;padding:11px 20px;border-radius:8px;
+    font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;
+    opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;
+    z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.25);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast svg{color:var(--accent);flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-mark">JG</div>
+      <div>
+        <h1>Control de Jigs</h1>
+        <p>Soporte Técnico · Trazabilidad de herramental de planta</p>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" data-view="registro">Seguimiento y control</button>
+      <button class="tab-btn" data-view="solicitudes">Solicitudes</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===================== VISTA 1: REGISTRO ===================== -->
+  <section id="view-registro" class="view active">
+
+    <div class="dash-grid" id="dash-registro"></div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-registro" placeholder="Buscar por jig, área o responsable...">
+      </div>
+      <button class="btn btn-primary" id="btn-open-registro">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Registrar jig
+      </button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Jig</th>
+            <th>Modelos</th>
+            <th>Descripción</th>
+            <th>Entregó</th>
+            <th>Cant.</th>
+            <th>F. entrega</th>
+            <th>Recibió</th>
+            <th>Área / línea</th>
+            <th>Evidencia</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-registro"></tbody>
+      </table>
+      <div class="empty-state" id="empty-registro" style="display:none;">
+        <div class="brand-mark" style="margin:0 auto 14px;">JG</div>
+        <h3>Aún no hay jigs registrados</h3>
+        <p>Registra el primer jig entregado para comenzar la trazabilidad del área.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('btn-open-registro').click()">Registrar jig</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== VISTA 2: SOLICITUDES ===================== -->
+  <section id="view-solicitudes" class="view">
+
+    <div class="dash-grid" id="dash-solicitudes"></div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-solicitudes" placeholder="Buscar por jig, área o solicitante...">
+      </div>
+      <button class="btn btn-primary" id="btn-open-solicitud">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nueva solicitud
+      </button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Jig</th>
+            <th>Modelos</th>
+            <th>Descripción</th>
+            <th>Solicita</th>
+            <th>Área</th>
+            <th>F. solicitud</th>
+            <th>Atiende</th>
+            <th>Estatus</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-solicitudes"></tbody>
+      </table>
+      <div class="empty-state" id="empty-solicitudes" style="display:none;">
+        <div class="brand-mark" style="margin:0 auto 14px;">JG</div>
+        <h3>No hay solicitudes registradas</h3>
+        <p>Da de alta una solicitud de jig para comenzar a darle seguimiento.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('btn-open-solicitud').click()">Nueva solicitud</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Datos compartidos y sincronizados entre dispositivos · Área de Soporte Técnico</footer>
+
+<div id="toast" class="toast"></div>
+
+<!-- ===================== MODAL: REGISTRAR JIG ===================== -->
+<div class="overlay" id="overlay-registro">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2>Registrar jig entregado</h2>
+        <p>Seguimiento y control de jigs</p>
+      </div>
+      <button class="modal-close" data-close="overlay-registro">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field full"><label>Nombre del jig</label><input id="f-r-nombre" type="text" placeholder="Ej. Jig de alineación soporte X"></div>
+        <div class="field full"><label>Modelos compatibles</label><input id="f-r-modelos" type="text" placeholder="Ej. Modelo A123, B200"></div>
+        <div class="field full"><label>Descripción / función</label><textarea id="f-r-descripcion" placeholder="¿Para qué se utiliza este jig?"></textarea></div>
+        <div class="field"><label>Quién entrega</label><input id="f-r-entrego" type="text"></div>
+        <div class="field"><label>Cantidad entregada</label><input id="f-r-cantidad" type="number" min="1" value="1"></div>
+        <div class="field"><label>Fecha de entrega</label><input id="f-r-fecha" type="date"></div>
+        <div class="field"><label>Quién recibe</label><input id="f-r-recibio" type="text"></div>
+        <div class="field"><label>Área que recibe (línea)</label><input id="f-r-area" type="text" placeholder="Ej. Línea 3"></div>
+        <div class="field full"><label>Evidencia fotográfica (enlace)</label><input id="f-r-evidencia" type="url" placeholder="https://..."></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="overlay-registro">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-registro">Guardar registro</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: NUEVA SOLICITUD ===================== -->
+<div class="overlay" id="overlay-solicitud">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2>Nueva solicitud de jig</h2>
+        <p>Seguimiento de solicitudes</p>
+      </div>
+      <button class="modal-close" data-close="overlay-solicitud">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field full"><label>Nombre del jig</label><input id="f-s-nombre" type="text" placeholder="Ej. Jig de prensado tapa Y"></div>
+        <div class="field full"><label>Modelos</label><input id="f-s-modelos" type="text"></div>
+        <div class="field full"><label>Descripción / función</label><textarea id="f-s-descripcion" placeholder="¿Para qué se necesita este jig?"></textarea></div>
+        <div class="field"><label>Quién solicita</label><input id="f-s-solicita" type="text"></div>
+        <div class="field"><label>Área que solicita</label><input id="f-s-area" type="text" placeholder="Ej. Línea 5"></div>
+        <div class="field"><label>Fecha de solicitud</label><input id="f-s-fecha" type="date"></div>
+        <div class="field"><label>Quién toma la solicitud</label><input id="f-s-toma" type="text"></div>
+        <div class="field"><label>Estatus</label>
+          <select id="f-s-estatus">
+            <option value="Pendiente">Pendiente</option>
+            <option value="En proceso">En proceso</option>
+            <option value="Terminado">Terminado</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="overlay-solicitud">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-solicitud">Guardar solicitud</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: CONTRASEÑA ===================== -->
+<div class="overlay" id="overlay-password">
+  <div class="modal modal-sm">
+    <div class="modal-body" style="padding-top:26px;">
+      <div class="pw-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h2 style="text-align:center;margin:0 0 4px;font-size:19px;">Acceso restringido</h2>
+      <p style="text-align:center;margin:0 0 16px;color:var(--muted);font-size:12.5px;font-family:'Inter';text-transform:none;">Esta acción requiere contraseña de soporte técnico</p>
+      <input type="password" id="pw-input" placeholder="Contraseña" style="width:100%;border:1px solid var(--line);border-radius:7px;padding:10px 12px;font-size:14px;text-align:center;letter-spacing:.15em;">
+      <p class="pw-error" id="pw-error"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="overlay-password">Cancelar</button>
+      <button class="btn btn-primary" id="btn-pw-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PASSWORD = "sopjig123";
+let registro = [];
+let solicitudes = [];
+let pendingAction = null;
+
+/* ---------- utilidades ---------- */
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function esc(str){
+  if(str === undefined || str === null) return "";
+  return String(str).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function fmtDate(d){
+  if(!d) return "—";
+  const parts = d.split("-");
+  if(parts.length !== 3) return d;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+function isThisMonth(dateStr){
+  if(!dateStr) return false;
+  const d = new Date(dateStr + "T00:00:00");
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
+let toastTimer = null;
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> ${esc(msg)}`;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+/* separa un campo de modelos como "FT205CO/BR201CO" o "FT205CO, BR201CO" en tokens individuales */
+function modelTokens(str){
+  return (str || '').split(/[\/,;]+/).map(s=>s.trim().toLowerCase()).filter(Boolean);
+}
+/* revisa coincidencia de búsqueda: por campos de texto normales y por cada modelo individual */
+function matchesTerm(record, term, fields){
+  if(!term) return true;
+  const t = term.toLowerCase();
+  for(const f of fields){
+    if((record[f] || '').toLowerCase().includes(t)) return true;
+  }
+  return modelTokens(record.modelos).some(tok => tok.includes(t) || t.includes(tok));
+}
+
+/* ---------- almacenamiento ---------- */
+async function loadAll(){
+  try{
+    const r = await window.storage.get('control-jigs-registro', true);
+    registro = r ? JSON.parse(r.value) : [];
+  }catch(e){ registro = []; }
+  try{
+    const s = await window.storage.get('control-jigs-solicitudes', true);
+    solicitudes = s ? JSON.parse(s.value) : [];
+  }catch(e){ solicitudes = []; }
+  renderRegistro();
+  renderSolicitudes();
+}
+async function persistRegistro(){
+  try{ await window.storage.set('control-jigs-registro', JSON.stringify(registro), true); }
+  catch(e){ console.error('No se pudo guardar el registro', e); }
+}
+async function persistSolicitudes(){
+  try{ await window.storage.set('control-jigs-solicitudes', JSON.stringify(solicitudes), true); }
+  catch(e){ console.error('No se pudo guardar la solicitud', e); }
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-' + btn.dataset.view).classList.add('active');
+  });
+});
+
+/* ---------- overlays genéricos ---------- */
+function openOverlay(id){ document.getElementById(id).classList.add('open'); }
+function closeOverlay(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('[data-close]').forEach(el=>{
+  el.addEventListener('click', ()=>closeOverlay(el.dataset.close));
+});
+document.querySelectorAll('.overlay').forEach(ov=>{
+  ov.addEventListener('click', e=>{ if(e.target === ov) closeOverlay(ov.id); });
+});
+
+/* ---------- gate de contraseña ---------- */
+function requestPassword(action){
+  pendingAction = action;
+  document.getElementById('pw-input').value = "";
+  document.getElementById('pw-error').textContent = "";
+  openOverlay('overlay-password');
+  setTimeout(()=>document.getElementById('pw-input').focus(), 80);
+}
+document.getElementById('btn-pw-confirm').addEventListener('click', confirmPassword);
+document.getElementById('pw-input').addEventListener('keydown', e=>{ if(e.key === 'Enter') confirmPassword(); });
+function confirmPassword(){
+  const val = document.getElementById('pw-input').value;
+  if(val === PASSWORD){
+    closeOverlay('overlay-password');
+    const action = pendingAction;
+    pendingAction = null;
+    if(action) action();
+  }else{
+    const errEl = document.getElementById('pw-error');
+    errEl.textContent = "Contraseña incorrecta. Intenta de nuevo.";
+    const modal = document.querySelector('#overlay-password .modal');
+    modal.classList.remove('shake'); void modal.offsetWidth; modal.classList.add('shake');
+  }
+}
+
+/* ---------- abrir formularios (protegidos) ---------- */
+document.getElementById('btn-open-registro').addEventListener('click', ()=>{
+  requestPassword(()=>{
+    ['f-r-nombre','f-r-modelos','f-r-descripcion','f-r-entrego','f-r-recibio','f-r-area','f-r-evidencia'].forEach(id=>document.getElementById(id).value = "");
+    document.getElementById('f-r-cantidad').value = 1;
+    document.getElementById('f-r-fecha').value = new Date().toISOString().slice(0,10);
+    openOverlay('overlay-registro');
+  });
+});
+document.getElementById('btn-open-solicitud').addEventListener('click', ()=>{
+  requestPassword(()=>{
+    ['f-s-nombre','f-s-modelos','f-s-descripcion','f-s-solicita','f-s-toma','f-s-area'].forEach(id=>document.getElementById(id).value = "");
+    document.getElementById('f-s-estatus').value = "Pendiente";
+    document.getElementById('f-s-fecha').value = new Date().toISOString().slice(0,10);
+    openOverlay('overlay-solicitud');
+  });
+});
+
+/* ---------- guardar registro ---------- */
+document.getElementById('btn-save-registro').addEventListener('click', async ()=>{
+  const nombre = document.getElementById('f-r-nombre').value.trim();
+  if(!nombre){ document.getElementById('f-r-nombre').focus(); return; }
+  registro.unshift({
+    id: uid(),
+    nombre,
+    modelos: document.getElementById('f-r-modelos').value.trim(),
+    descripcion: document.getElementById('f-r-descripcion').value.trim(),
+    entrego: document.getElementById('f-r-entrego').value.trim(),
+    cantidad: Number(document.getElementById('f-r-cantidad').value) || 0,
+    fecha: document.getElementById('f-r-fecha').value,
+    recibio: document.getElementById('f-r-recibio').value.trim(),
+    area: document.getElementById('f-r-area').value.trim(),
+    evidencia: document.getElementById('f-r-evidencia').value.trim(),
+  });
+  closeOverlay('overlay-registro');
+  await persistRegistro();
+  renderRegistro();
+  showToast('Jig registrado y guardado');
+});
+
+/* ---------- guardar solicitud ---------- */
+document.getElementById('btn-save-solicitud').addEventListener('click', async ()=>{
+  const nombre = document.getElementById('f-s-nombre').value.trim();
+  if(!nombre){ document.getElementById('f-s-nombre').focus(); return; }
+  solicitudes.unshift({
+    id: uid(),
+    nombre,
+    modelos: document.getElementById('f-s-modelos').value.trim(),
+    descripcion: document.getElementById('f-s-descripcion').value.trim(),
+    solicita: document.getElementById('f-s-solicita').value.trim(),
+    area: document.getElementById('f-s-area').value.trim(),
+    fecha: document.getElementById('f-s-fecha').value,
+    toma: document.getElementById('f-s-toma').value.trim(),
+    estatus: document.getElementById('f-s-estatus').value,
+  });
+  closeOverlay('overlay-solicitud');
+  await persistSolicitudes();
+  renderSolicitudes();
+  showToast('Solicitud registrada y guardada');
+});
+
+/* ---------- eliminar (protegido) ---------- */
+function deleteRegistro(id){
+  requestPassword(async ()=>{
+    registro = registro.filter(r=>r.id !== id);
+    await persistRegistro();
+    renderRegistro();
+    showToast('Registro eliminado');
+  });
+}
+function deleteSolicitud(id){
+  requestPassword(async ()=>{
+    solicitudes = solicitudes.filter(s=>s.id !== id);
+    await persistSolicitudes();
+    renderSolicitudes();
+    showToast('Solicitud eliminada');
+  });
+}
+
+/* ---------- cambio de estatus (libre, parte del flujo normal) ---------- */
+async function changeEstatus(id, value){
+  const s = solicitudes.find(s=>s.id === id);
+  if(s){ s.estatus = value; await persistSolicitudes(); renderSolicitudes(); showToast('Estatus actualizado'); }
+}
+
+/* ---------- badges ---------- */
+function estatusBadgeClass(e){
+  if(e === 'Terminado') return 'badge-terminado';
+  if(e === 'En proceso') return 'badge-proceso';
+  return 'badge-pendiente';
+}
+
+/* ---------- render: registro ---------- */
+function renderRegistro(){
+  const term = document.getElementById('search-registro').value.trim().toLowerCase();
+  const filtered = registro.filter(r=>matchesTerm(r, term, ['nombre','area','entrego','recibio']));
+  const tbody = document.getElementById('tbody-registro');
+  document.getElementById('empty-registro').style.display = registro.length ? 'none':'block';
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td><span class="jig-tag">${esc(r.nombre)}</span></td>
+      <td class="cell-muted">${esc(r.modelos) || '—'}</td>
+      <td class="cell-desc">${esc(r.descripcion) || '—'}</td>
+      <td>${esc(r.entrego) || '—'}</td>
+      <td class="mono">${r.cantidad ?? '—'}</td>
+      <td class="mono cell-muted">${fmtDate(r.fecha)}</td>
+      <td>${esc(r.recibio) || '—'}</td>
+      <td>${esc(r.area) || '—'}</td>
+      <td>${r.evidencia ? `<a class="link-ev" href="${esc(r.evidencia)}" target="_blank" rel="noopener">Ver enlace →</a>` : '<span class="cell-muted">—</span>'}</td>
+      <td class="row-actions">
+        <button class="icon-btn danger" title="Eliminar" onclick="deleteRegistro('${r.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+  renderDashRegistro();
+}
+
+/* ---------- render: solicitudes ---------- */
+function renderSolicitudes(){
+  const term = document.getElementById('search-solicitudes').value.trim().toLowerCase();
+  const filtered = solicitudes.filter(s=>matchesTerm(s, term, ['nombre','area','solicita','toma']));
+  const tbody = document.getElementById('tbody-solicitudes');
+  document.getElementById('empty-solicitudes').style.display = solicitudes.length ? 'none':'block';
+  tbody.innerHTML = filtered.map(s => `
+    <tr>
+      <td><span class="jig-tag">${esc(s.nombre)}</span></td>
+      <td class="cell-muted">${esc(s.modelos) || '—'}</td>
+      <td class="cell-desc">${esc(s.descripcion) || '—'}</td>
+      <td>${esc(s.solicita) || '—'}</td>
+      <td>${esc(s.area) || '—'}</td>
+      <td class="mono cell-muted">${fmtDate(s.fecha)}</td>
+      <td>${esc(s.toma) || '—'}</td>
+      <td>
+        <select class="status-select" onchange="changeEstatus('${s.id}', this.value)">
+          <option value="Pendiente" ${s.estatus==='Pendiente'?'selected':''}>Pendiente</option>
+          <option value="En proceso" ${s.estatus==='En proceso'?'selected':''}>En proceso</option>
+          <option value="Terminado" ${s.estatus==='Terminado'?'selected':''}>Terminado</option>
+        </select>
+      </td>
+      <td class="row-actions">
+        <button class="icon-btn danger" title="Eliminar" onclick="deleteSolicitud('${s.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+  renderDashSolicitudes();
+  renderDashRegistro();
+}
+
+/* ---------- dashboards ---------- */
+function renderDashRegistro(){
+  const el = document.getElementById('dash-registro');
+  const totalEntregas = registro.length;
+  const jigsUnicos = new Set(registro.map(r=>r.nombre.toLowerCase())).size;
+  const unidades = registro.reduce((a,r)=>a + (Number(r.cantidad)||0), 0);
+  const areas = new Set(registro.map(r=>r.area).filter(Boolean)).size;
+  const esteMes = registro.filter(r=>isThisMonth(r.fecha)).length;
+
+  const porJig = {};
+  registro.forEach(r=>{ porJig[r.nombre] = (porJig[r.nombre]||0) + (Number(r.cantidad)||0); });
+  let topJig = '—';
+  let topVal = 0;
+  Object.entries(porJig).forEach(([k,v])=>{ if(v>topVal){ topVal=v; topJig=k; } });
+
+  const activas = solicitudes.filter(s=>s.estatus !== 'Terminado').length;
+  const totalSolicitudes = solicitudes.length;
+
+  el.innerHTML = `
+    <div class="stat-card acc">
+      <p class="stat-label">Jigs distintos</p>
+      <p class="stat-value">${jigsUnicos}</p>
+      <p class="stat-sub">${totalEntregas} entregas registradas</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Unidades entregadas</p>
+      <p class="stat-value">${unidades}</p>
+      <p class="stat-sub">acumulado histórico</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Líneas / áreas atendidas</p>
+      <p class="stat-value">${areas}</p>
+      <p class="stat-sub">áreas receptoras distintas</p>
+    </div>
+    <div class="stat-card ok">
+      <p class="stat-label">Entregas este mes</p>
+      <p class="stat-value">${esteMes}</p>
+      <p class="stat-sub">${new Date().toLocaleString('es-MX',{month:'long',year:'numeric'})}</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Jig más entregado</p>
+      <p class="stat-value" style="font-size:18px;text-transform:none;font-family:'Inter';font-weight:700;line-height:1.3;">${esc(topJig)}</p>
+      <p class="stat-sub">${topVal} unidades acumuladas</p>
+    </div>
+    <div class="stat-card warn">
+      <p class="stat-label">Jigs solicitados actualmente</p>
+      <p class="stat-value">${activas}</p>
+      <p class="stat-sub">${totalSolicitudes} solicitudes registradas en total</p>
+    </div>
+  `;
+}
+
+function renderDashSolicitudes(){
+  const el = document.getElementById('dash-solicitudes');
+  const total = solicitudes.length;
+  const pend = solicitudes.filter(s=>s.estatus==='Pendiente').length;
+  const proc = solicitudes.filter(s=>s.estatus==='En proceso').length;
+  const term = solicitudes.filter(s=>s.estatus==='Terminado').length;
+  const esteMes = solicitudes.filter(s=>isThisMonth(s.fecha)).length;
+  const pct = total ? Math.round((term/total)*100) : 0;
+
+  const pPend = total ? (pend/total*100) : 0;
+  const pProc = total ? (proc/total*100) : 0;
+  const pTerm = total ? (term/total*100) : 0;
+
+  el.innerHTML = `
+    <div class="stat-card">
+      <p class="stat-label">Solicitudes totales</p>
+      <p class="stat-value">${total}</p>
+      <p class="stat-sub">${esteMes} registradas este mes</p>
+    </div>
+    <div class="stat-card pend">
+      <p class="stat-label">Pendientes</p>
+      <p class="stat-value">${pend}</p>
+      <p class="stat-sub">sin iniciar</p>
+    </div>
+    <div class="stat-card warn">
+      <p class="stat-label">En proceso</p>
+      <p class="stat-value">${proc}</p>
+      <p class="stat-sub">en atención</p>
+    </div>
+    <div class="stat-card ok">
+      <p class="stat-label">Terminadas</p>
+      <p class="stat-value">${term}</p>
+      <p class="stat-sub">${pct}% de avance total</p>
+    </div>
+    <div class="stat-card" style="grid-column:span 2;min-width:220px;">
+      <p class="stat-label">Distribución por estatus</p>
+      <div class="status-bar" style="margin-top:10px;">
+        <span style="width:${pPend}%;background:var(--pend);"></span>
+        <span style="width:${pProc}%;background:var(--warn);"></span>
+        <span style="width:${pTerm}%;background:var(--ok);"></span>
+      </div>
+      <p class="stat-sub" style="margin-top:8px;">Pendiente ${pend} · En proceso ${proc} · Terminado ${term}</p>
+    </div>
+  `;
+}
+
+/* ---------- búsqueda ---------- */
+document.getElementById('search-registro').addEventListener('input', renderRegistro);
+document.getElementById('search-solicitudes').addEventListener('input', renderSolicitudes);
+
+/* ---------- init ---------- */
+loadAll();
+</script>
+</body>
+</html>
