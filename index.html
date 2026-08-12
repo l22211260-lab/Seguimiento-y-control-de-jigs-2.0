@@ -400,7 +400,7 @@
   <div class="modal">
     <div class="modal-head">
       <div>
-        <h2>Nueva solicitud de jig</h2>
+        <h2 id="solicitud-modal-title">Nueva solicitud de jig</h2>
         <p>Seguimiento de solicitudes</p>
       </div>
       <button class="modal-close" data-close="overlay-solicitud">&times;</button>
@@ -464,6 +464,7 @@ let registro = [];
 let solicitudes = [];
 let pendingAction = null;
 let editingRegistroId = null;
+let editingSolicitudId = null;
 
 /* ---------- utilidades ---------- */
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
@@ -602,6 +603,9 @@ function editRegistro(id){
 }
 document.getElementById('btn-open-solicitud').addEventListener('click', ()=>{
   requestPassword(()=>{
+    editingSolicitudId = null;
+    document.getElementById('solicitud-modal-title').textContent = 'Nueva solicitud de jig';
+    document.getElementById('btn-save-solicitud').textContent = 'Guardar solicitud';
     ['f-s-nombre','f-s-modelos','f-s-descripcion','f-s-solicita','f-s-toma','f-s-area'].forEach(id=>document.getElementById(id).value = "");
     document.getElementById('f-s-estatus').value = "Pendiente";
     document.getElementById('f-s-cantidad').value = 1;
@@ -609,6 +613,26 @@ document.getElementById('btn-open-solicitud').addEventListener('click', ()=>{
     openOverlay('overlay-solicitud');
   });
 });
+
+function editSolicitud(id){
+  requestPassword(()=>{
+    const s = solicitudes.find(x=>x.id === id);
+    if(!s) return;
+    editingSolicitudId = id;
+    document.getElementById('solicitud-modal-title').textContent = 'Editar solicitud';
+    document.getElementById('btn-save-solicitud').textContent = 'Guardar cambios';
+    document.getElementById('f-s-nombre').value = s.nombre || '';
+    document.getElementById('f-s-modelos').value = s.modelos || '';
+    document.getElementById('f-s-descripcion').value = s.descripcion || '';
+    document.getElementById('f-s-solicita').value = s.solicita || '';
+    document.getElementById('f-s-area').value = s.area || '';
+    document.getElementById('f-s-cantidad').value = s.cantidad ?? 1;
+    document.getElementById('f-s-fecha').value = s.fecha || '';
+    document.getElementById('f-s-toma').value = s.toma || '';
+    document.getElementById('f-s-estatus').value = s.estatus || 'Pendiente';
+    openOverlay('overlay-solicitud');
+  });
+}
 
 /* ---------- guardar registro ---------- */
 document.getElementById('btn-save-registro').addEventListener('click', async ()=>{
@@ -650,8 +674,7 @@ document.getElementById('btn-save-registro').addEventListener('click', async ()=
 document.getElementById('btn-save-solicitud').addEventListener('click', async ()=>{
   const nombre = document.getElementById('f-s-nombre').value.trim();
   if(!nombre){ document.getElementById('f-s-nombre').focus(); return; }
-  const nueva = {
-    id: uid(),
+  const datos = {
     nombre,
     modelos: document.getElementById('f-s-modelos').value.trim(),
     descripcion: document.getElementById('f-s-descripcion').value.trim(),
@@ -662,12 +685,25 @@ document.getElementById('btn-save-solicitud').addEventListener('click', async ()
     toma: document.getElementById('f-s-toma').value.trim(),
     estatus: document.getElementById('f-s-estatus').value,
   };
-  const { error } = await db.from('solicitudes').insert(nueva);
-  if(error){ console.error(error); showToast('Error al guardar la solicitud'); return; }
-  solicitudes.unshift(nueva);
-  closeOverlay('overlay-solicitud');
-  renderSolicitudes();
-  showToast('Solicitud registrada y guardada');
+
+  if(editingSolicitudId){
+    const { error } = await db.from('solicitudes').update(datos).eq('id', editingSolicitudId);
+    if(error){ console.error(error); showToast('Error al guardar los cambios'); return; }
+    const idx = solicitudes.findIndex(s=>s.id === editingSolicitudId);
+    if(idx !== -1) solicitudes[idx] = { ...solicitudes[idx], ...datos };
+    editingSolicitudId = null;
+    closeOverlay('overlay-solicitud');
+    renderSolicitudes();
+    showToast('Solicitud actualizada');
+  }else{
+    const nueva = { id: uid(), ...datos };
+    const { error } = await db.from('solicitudes').insert(nueva);
+    if(error){ console.error(error); showToast('Error al guardar la solicitud'); return; }
+    solicitudes.unshift(nueva);
+    closeOverlay('overlay-solicitud');
+    renderSolicitudes();
+    showToast('Solicitud registrada y guardada');
+  }
 });
 
 /* ---------- eliminar (protegido) ---------- */
@@ -762,6 +798,9 @@ function renderSolicitudes(){
         </select>
       </td>
       <td class="row-actions">
+        <button class="icon-btn" title="Editar" onclick="editSolicitud('${s.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
         <button class="icon-btn danger" title="Eliminar" onclick="deleteSolicitud('${s.id}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
         </button>
